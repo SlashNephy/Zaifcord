@@ -1,18 +1,18 @@
 # Zaifcord
 Zaifの最終価格を通知するDiscord Botです. 対日本円レートの通貨ペアにのみ対応しています.
 
-# 動作環境
+## 動作環境
 Python 3.6 以降
 
-# 機能
+## 機能
 - 5円刻みで現在の価格をプレイ中として表示します.  
 <img src="https://raw.githubusercontent.com/SlashNephy/Zaifcord/master/img/playing.png">  
-5円刻みとしているのは Discord APIに負荷を掛けすぎないためです.
+5円刻みとしているのは Discord APIに負荷を掛けすぎないためです.  
 - 大きな価格変動があった際に メッセージを送信します.  
 <img src="https://raw.githubusercontent.com/SlashNephy/Zaifcord/master/img/price_change.png">  
-例えば 50円間隔で価格変動を監視したいときは `width=50` とします.
+例えば 50円間隔で価格変動を監視したいときは `width=50` とします.  
 
-# 導入方法
+## 導入方法
 ##### 1. pipで必要なライブラリをインストール.
 ```bash
 pip install discord.py colorama
