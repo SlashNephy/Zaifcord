@@ -1,6 +1,8 @@
 # Zaifcord
 [Zaif](https://zaif.jp)で取り扱っている仮想通貨の価格変化を通知するDiscord Botです.  
-対日本円レートの通貨ペアにのみ対応しています. (MONA/JPY, BTC/JPYなど)
+対日本円レートの通貨ペアにのみ対応しています. (MONA/JPY, BTC/JPYなど)  
+
+Zaifはテックビューロ株式会社の登録商標です.
 
 ## 動作環境
 Python 3.6 以降
@@ -56,7 +58,7 @@ Python 3.6 以降
     ```
 
 ## Q&A
-- DiscordのBotのトークンの取得方法を知りたい
+- DiscordのBotのトークンの取得方法を知りたい  
     Discordの[My Apps](https://discordapp.com/developers/applications/me)でユーザごとに10個まで作成できます.
 
 - 通貨ペアがわからない  
