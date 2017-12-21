@@ -39,12 +39,12 @@ class ZaifBot:
                 timestamp=datetime.utcnow(),
         )
         embedObject.set_author(
-                name=self.config.name,
+                name=f"{self.config.name} (Zaif)",
                 url=self.config.url
         )
 
         for channel in self.textChannels.values():
-            await self.client.purge_from(channel, check=lambda x: x.author == self.client.user, limit=1)
+            await self.client.purge_from(channel, check=lambda x: x.author == self.client.user)
             await self.client.send_message(channel, embed=embedObject)
         Utils.printInfo(f"{self.config.name} が {Back.LIGHTRED_EX + '上昇中' if up else Back.LIGHTBLUE_EX + '下落中'}{Back.RESET}です. {phase}円台に突入しました. 現在の価格は {price}JPYです.")
 

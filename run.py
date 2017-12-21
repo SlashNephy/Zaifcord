@@ -5,7 +5,7 @@ bots = [
     Config(
         name="MONA",
         url="https://zaif.jp/trade_mona_jpy",
-        token="<Botのトークンを入力してください>",
+        token="",
         channelIds=[""],
         currencyPair="mona_jpy",
         width=100
@@ -13,8 +13,8 @@ bots = [
     Config(
         name="CMS (ERC20)",
         url="https://zaif.jp/trade/erc20.cms_jpy",
-        token="<Botのトークンを入力してください>",
-        channelIds=["393333723052900352"],
+        token="",
+        channelIds=[""],
         currencyPair="erc20.cms_jpy",
         width=50
     )
