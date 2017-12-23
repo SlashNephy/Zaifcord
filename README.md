@@ -24,7 +24,7 @@ Python 3.6 以降
 ## 導入方法
 1. pipで必要なライブラリをインストール.  
     ```bash
-    pip3 install websocket-client discord.py colorama
+    pip3 install discord.py requests websocket-client colorama
     ```
 
 2. `run.py` 内にBotの情報を記述.  

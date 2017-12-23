@@ -3,9 +3,10 @@ import asyncio
 import time
 from datetime import datetime
 from threading import Thread
-from typing import Dict
+from typing import Dict, Optional
 
 import discord
+import requests
 from colorama import Back
 from discord import Game, Embed, Colour, Client, Channel
 
@@ -25,6 +26,18 @@ class ZaifBot:
         self.zaifStream: ZaifStream = ZaifStream(self.config.currencyPair)
         self.priceHistory: Dict = {}
 
+    def getTicker(self) -> Optional[Dict]:
+        with requests.get(f"https://api.zaif.jp/api/1/ticker/{self.config.currencyPair}", headers={"User-Agent": "Zaifcord 1.0 (https://github.com/SlashNephy/Zaifcord)"}) as r:
+            try:
+                return r.json()
+            except Exception:
+                Utils.printError(f"ティッカーの取得に失敗しました: {self.config.currencyPair}")
+                return None
+
+    @staticmethod
+    def formatComma(x) -> str:
+        return "{:,}".format(x)
+
     async def sendMessage(self, phase: int, up: bool, price: float):
         key: str = f"{'u' if up else 'd'}_{phase}"
         lastTime = self.priceHistory.get(key)
@@ -32,16 +45,36 @@ class ZaifBot:
         if lastTime and (datetime.now() - lastTime).total_seconds() < 180:
             return
 
+        ticker = self.getTicker()
+        if not ticker:
+            return
+
+        if up:
+            if ticker["high"] <= price:
+                title = "高値更新中⤴"
+            else:
+                title = "上昇中⤴"
+        else:
+            if price <= ticker["low"]:
+                title = "安値更新中⤵"
+            else:
+                title = "下落中⤵"
+
+        percent = round((price / ticker["vwap"] - 1) * 100, 2)
         embedObject = Embed(
-                title="上昇中:arrow_heading_up:" if up else "下落中:arrow_heading_down:",
+                title=f"{title} ({'+' if percent > 0 else '-'}{percent}%)",
                 color=Colour(int("88B04B" if up else "FF4444", 16)),
-                description=f"{phase}円台に突入しました！現在 {price}JPY",
+                description=f"{phase}円台に突入しました. 現在 {self.formatComma(price)}JPYです.",
                 timestamp=datetime.utcnow(),
         )
         embedObject.set_author(
                 name=f"{self.config.name} (Zaif)",
                 url=self.config.url
         )
+        embedObject.add_field(name="24h高値", value=self.formatComma(ticker["high"]))
+        embedObject.add_field(name="24h安値", value=self.formatComma(ticker["low"]))
+        embedObject.add_field(name="加重平均", value=self.formatComma(ticker["vwap"]))
+        embedObject.add_field(name="24h出来高", value=self.formatComma(ticker["volume"]))
 
         for channel in self.textChannels.values():
             await self.client.purge_from(channel, check=lambda x: x.author == self.client.user)
