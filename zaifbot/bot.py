@@ -14,6 +14,9 @@ from .config import Config
 from .stream import ZaifStream
 from .utils import Utils
 
+httpHeaders: Dict[str, str] = {
+    "User-Agent": "Zaifcord 1.0 (https://github.com/SlashNephy/Zaifcord)"
+}
 
 class ZaifBot:
     def __init__(self, config: Config) -> None:
@@ -27,12 +30,22 @@ class ZaifBot:
         self.priceHistory: Dict = {}
 
     def getTicker(self) -> Optional[Dict]:
-        with requests.get(f"https://api.zaif.jp/api/1/ticker/{self.config.currencyPair}", headers={"User-Agent": "Zaifcord 1.0 (https://github.com/SlashNephy/Zaifcord)"}) as r:
+        with requests.get(f"https://api.zaif.jp/api/1/ticker/{self.config.currencyPair}", headers=httpHeaders) as r:
             try:
                 return r.json()
             except Exception:
                 Utils.printError(f"ティッカーの取得に失敗しました: {self.config.currencyPair}")
                 return None
+
+    def getCoinMarketCapApi(self) -> Optional[Dict]:
+        if not self.config.coinmarketcapId:
+            return None
+        with requests.get(f"https://api.coinmarketcap.com/v1/ticker/{self.config.coinmarketcapId}/?convert=JPY", headers=httpHeaders) as r:
+            try:
+                t = r.json()
+                return t[0] if "error" not in t else None
+            except Exception:
+                Utils.printError(f"CoinMarketCapのティッカーの取得に失敗しました: {self.config.currencyPair}")
 
     @staticmethod
     def formatComma(x) -> str:
@@ -48,6 +61,7 @@ class ZaifBot:
         ticker = self.getTicker()
         if not ticker:
             return
+        coinmarketcapTicker = self.getCoinMarketCapApi()
 
         if up:
             if ticker["high"] <= price:
@@ -62,7 +76,7 @@ class ZaifBot:
 
         percent = round((price / ticker["vwap"] - 1) * 100, 2)
         embedObject = Embed(
-                title=f"{title} ({'+' if percent > 0 else '-'}{percent}%)",
+                title=f"{title} ({'+' if percent > 0 else ''}{percent}%)",
                 color=Colour(int("88B04B" if up else "FF4444", 16)),
                 description=f"{phase}円台に突入しました. 現在 {self.formatComma(price)}JPYです.",
                 timestamp=datetime.utcnow(),
@@ -71,13 +85,19 @@ class ZaifBot:
                 name=f"{self.config.name} (Zaif)",
                 url=self.config.url
         )
-        embedObject.add_field(name="24h高値", value=self.formatComma(ticker["high"]))
         embedObject.add_field(name="24h安値", value=self.formatComma(ticker["low"]))
-        embedObject.add_field(name="加重平均", value=self.formatComma(ticker["vwap"]))
+        embedObject.add_field(name="24h高値", value=self.formatComma(ticker["high"]))
+        embedObject.add_field(name="24h加重平均", value=self.formatComma(ticker["vwap"]))
         embedObject.add_field(name="24h出来高", value=self.formatComma(ticker["volume"]))
+        if coinmarketcapTicker:
+            percent = round((price / float(coinmarketcapTicker["price_jpy"]) - 1) * 100, 2)
+            embedObject.description += f" 市場平均は {round(float(coinmarketcapTicker['price_jpy']), 2)}JPYで 乖離は{'+' if percent > 0 else ''}{percent}%です."
+            embedObject.add_field(name="時価総額", value=self.formatComma(float(coinmarketcapTicker["market_cap_jpy"])))
+            embedObject.add_field(name="時価総額ランキング", value=coinmarketcapTicker["rank"] + "位")
 
         for channel in self.textChannels.values():
             await self.client.purge_from(channel, check=lambda x: x.author == self.client.user)
+            await self.client.send_typing(channel)
             await self.client.send_message(channel, embed=embedObject)
         Utils.printInfo(f"{self.config.name} が {Back.LIGHTRED_EX + '上昇中' if up else Back.LIGHTBLUE_EX + '下落中'}{Back.RESET}です. {phase}円台に突入しました. 現在の価格は {price}JPYです.")
 
@@ -133,7 +153,6 @@ class ZaifBot:
                     pass
             for channelId in self.config.textChannelIds:
                 self.textChannels[channelId] = self.client.get_channel(channelId)
-                await self.client.purge_from(self.textChannels[channelId], check=lambda x: x.author == self.client.user)
 
             Utils.printInfo(f"Discordに接続しました: Bot \"{self.config.name}\"")
             await self.stream()

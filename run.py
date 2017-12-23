@@ -8,7 +8,8 @@ bots = [
         token="",
         channelIds=[""],
         currencyPair="mona_jpy",
-        width=100
+        width=100,
+        coinmarketcapId="monacoin"
     ),
     Config(
         name="CMS (ERC20)",
