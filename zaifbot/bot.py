@@ -3,7 +3,7 @@ import asyncio
 import time
 from datetime import datetime
 from threading import Thread
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import discord
 import requests
@@ -48,8 +48,17 @@ class ZaifBot:
                 Utils.printError(f"CoinMarketCapのティッカーの取得に失敗しました: {self.config.currencyPair}")
 
     @staticmethod
-    def formatComma(x) -> str:
+    def formatComma(x: Union[int, float]) -> str:
         return "{:,}".format(x)
+
+    @staticmethod
+    def formatJPY(x: float) -> str:
+        x = round(x)
+        manUnit, okuUnit = int(1e4), int(1e8)
+        oku = x // okuUnit
+        x -= okuUnit * oku
+        man = x // manUnit
+        return f"約{oku}億{man}万円"
 
     async def sendMessage(self, phase: int, up: bool, price: float):
         key: str = f"{'u' if up else 'd'}_{phase}"
@@ -85,6 +94,9 @@ class ZaifBot:
                 name=f"{self.config.name} (Zaif)",
                 url=self.config.url
         )
+        embedObject.set_footer(
+                text=datetime.now().strftime("%Y/%m/%d %H:%M") + " 時点"
+        )
         embedObject.add_field(name="24h安値", value=self.formatComma(ticker["low"]))
         embedObject.add_field(name="24h高値", value=self.formatComma(ticker["high"]))
         embedObject.add_field(name="24h加重平均", value=self.formatComma(ticker["vwap"]))
@@ -92,8 +104,9 @@ class ZaifBot:
         if coinmarketcapTicker:
             percent = round((price / float(coinmarketcapTicker["price_jpy"]) - 1) * 100, 2)
             embedObject.description += f" 市場平均は {round(float(coinmarketcapTicker['price_jpy']), 2)}JPYで 乖離は{'+' if percent > 0 else ''}{percent}%です."
-            embedObject.add_field(name="時価総額", value=self.formatComma(float(coinmarketcapTicker["market_cap_jpy"])))
-            embedObject.add_field(name="時価総額ランキング", value=coinmarketcapTicker["rank"] + "位")
+            if coinmarketcapTicker["market_cap_jpy"]:
+                embedObject.add_field(name="時価総額", value=self.formatJPY(float(coinmarketcapTicker["market_cap_jpy"])))
+            embedObject.add_field(name="ランキング", value=coinmarketcapTicker["rank"] + "位")
 
         for channel in self.textChannels.values():
             await self.client.purge_from(channel, check=lambda x: x.author == self.client.user)
